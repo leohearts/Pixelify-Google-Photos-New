@@ -6,16 +6,10 @@ object Constants {
 
     val TELEGRAM_GROUP = "https://t.me/pixelifyGooglePhotos"
 
-    val UPDATE_INFO_URL = "https://raw.githubusercontent.com/BaltiApps/Pixelify-Google-Photos/main/update_info.json"
-    val UPDATE_INFO_URL2 = "https://raw.githubusercontent.com/Xposed-Modules-Repo/balti.xposed.pixelifygooglephotos/main/update_info.json"
-    val RELEASES_URL = "https://github.com/BaltiApps/Pixelify-Google-Photos/releases"
-    val RELEASES_URL2 = "https://github.com/Xposed-Modules-Repo/balti.xposed.pixelifygooglephotos/releases"
+    val UPDATE_INFO_URL = "https://raw.githubusercontent.com/miIiano/Pixelify-Google-Photos/main/update_info.json"
+    val RELEASES_URL = "https://github.com/miIiano/Pixelify-Google-Photos/releases"
 
     val FIELD_LATEST_VERSION_CODE = "latest_version_code"
-
-    val SHARED_PREF_FILE_NAME = "prefs"
-
-    val CONF_EXPORT_NAME = "pgp_conf.json"
 
     val PREF_SPOOF_FEATURES_LIST = "PREF_SPOOF_FEATURES_LIST"
     val PREF_DEVICE_TO_SPOOF = "PREF_DEVICE_TO_SPOOF"
@@ -25,4 +19,7 @@ object Constants {
     val PREF_SPOOF_ANDROID_VERSION_FOLLOW_DEVICE = "PREF_SPOOF_ANDROID_VERSION_FOLLOW_DEVICE"
     val PREF_SPOOF_ANDROID_VERSION_MANUAL = "PREF_SPOOF_ANDROID_VERSION_MANUAL"
     val PREF_LAST_VERSION = "PREF_LAST_VERSION"
+    val SHARED_PREF_PATH = "/sdcard/"
+    val SHARED_PREF_FILE_NAME = "pixelify-pref.json"
+
 }

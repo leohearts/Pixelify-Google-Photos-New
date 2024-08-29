@@ -6,7 +6,6 @@ import balti.xposed.pixelifygooglephotos.Constants.PREF_ENABLE_VERBOSE_LOGS
 import balti.xposed.pixelifygooglephotos.Constants.PREF_OVERRIDE_ROM_FEATURE_LEVELS
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_FEATURES_LIST
 import balti.xposed.pixelifygooglephotos.Constants.PREF_STRICTLY_CHECK_GOOGLE_PHOTOS
-import balti.xposed.pixelifygooglephotos.Constants.SHARED_PREF_FILE_NAME
 import de.robv.android.xposed.*
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
@@ -38,11 +37,7 @@ class FeatureSpoofer: IXposedHookLoadPackage {
     /**
      * To read preference of user.
      */
-    private val pref by lazy {
-        XSharedPreferences(BuildConfig.APPLICATION_ID, SHARED_PREF_FILE_NAME).apply {
-            log("Preference location: ${file.canonicalPath}")
-        }
-    }
+    private val pref by lazy { FilePref }
 
     private val verboseLog: Boolean by lazy {
         pref.getBoolean(PREF_ENABLE_VERBOSE_LOGS, false)
@@ -60,27 +55,27 @@ class FeatureSpoofer: IXposedHookLoadPackage {
 
         val featureFlags = pref.getStringSet(PREF_SPOOF_FEATURES_LIST, defaultFeatureLevelsName)?.let { set ->
 
-            val eligibleFeatures: List<DeviceProps.Features> =
+                val eligibleFeatures: List<DeviceProps.Features> =
 
-                when {
-                    set.isEmpty() -> {
-                        log("Feature flags init: EMPTY SET")
-                        listOf()
+                    when {
+                        set.isEmpty() -> {
+                            log("Feature flags init: EMPTY SET")
+                            listOf()
+                        }
+                        set == defaultFeatureLevelsName -> {
+                            log("Feature flags init: DEFAULT SET")
+                            defaultFeatures
+                        }
+                        else -> DeviceProps.allFeatures.filter { set.contains(it.displayName) }
                     }
-                    set == defaultFeatureLevelsName -> {
-                        log("Feature flags init: DEFAULT SET")
-                        defaultFeatures
-                    }
-                    else -> DeviceProps.allFeatures.filter { set.contains(it.displayName) }
+
+                val allFeatureFlags = ArrayList<String>(0)
+
+                eligibleFeatures.forEach {
+                    allFeatureFlags.addAll(it.featureFlags)
                 }
 
-            val allFeatureFlags = ArrayList<String>(0)
-
-            eligibleFeatures.forEach {
-                allFeatureFlags.addAll(it.featureFlags)
-            }
-
-            allFeatureFlags
+                allFeatureFlags
         }?: listOf()
 
         featureFlags.apply {

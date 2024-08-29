@@ -1,4 +1,13 @@
 # Pixelify-Google-Photos
+[![Build and Release](https://github.com/miIiano/Pixelify-Google-Photos/actions/workflows/release.yaml/badge.svg)](https://github.com/miIiano/Pixelify-Google-Photos/actions/workflows/release.yaml)
+
+# New changes
+- changed the way of storing feature flags since "MODE_WORLD_READABLE" with "XSharedPreferences" is not working in newly released versions of android versions
+- do not remove /sdcard/pixelify-pref.json
+- Google Photos and Pixelify app will request root for the first time to seamlessly read/write the above-mentioned file
+- removed import export
+
+
 LSPosed / EdXposed module to add Google Pixel features on Google Photos for any device.  
 Tested on EdXposed by [Jim Wu](https://github.com/MlgmXyysd)  
 

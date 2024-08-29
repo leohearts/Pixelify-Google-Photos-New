@@ -3,7 +3,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
+        maven {
+            url = uri("https://maven.pkg.github.com/miIiano/maven")
+            credentials {
+                username = System.getenv("USER")
+                password = System.getenv("TOKEN")
+            }
+        }
     }
 }
 rootProject.name = "Pixelify Google Photos"

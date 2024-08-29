@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Paint
 import android.net.Uri
 import android.os.AsyncTask
-import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -15,8 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.core.content.FileProvider
-import balti.xposed.pixelifygooglephotos.Constants.CONF_EXPORT_NAME
 import balti.xposed.pixelifygooglephotos.Constants.FIELD_LATEST_VERSION_CODE
 import balti.xposed.pixelifygooglephotos.Constants.PREF_DEVICE_TO_SPOOF
 import balti.xposed.pixelifygooglephotos.Constants.PREF_ENABLE_VERBOSE_LOGS
@@ -27,15 +24,11 @@ import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_ANDROID_VERSION_MA
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_FEATURES_LIST
 import balti.xposed.pixelifygooglephotos.Constants.PREF_STRICTLY_CHECK_GOOGLE_PHOTOS
 import balti.xposed.pixelifygooglephotos.Constants.RELEASES_URL
-import balti.xposed.pixelifygooglephotos.Constants.RELEASES_URL2
-import balti.xposed.pixelifygooglephotos.Constants.SHARED_PREF_FILE_NAME
 import balti.xposed.pixelifygooglephotos.Constants.TELEGRAM_GROUP
 import balti.xposed.pixelifygooglephotos.Constants.UPDATE_INFO_URL
-import balti.xposed.pixelifygooglephotos.Constants.UPDATE_INFO_URL2
 import com.google.android.material.snackbar.Snackbar
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.net.URL
 
 
@@ -49,13 +42,7 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
      * If an exception is thrown, means module is not enabled,
      * hence Android throws a security exception.
      */
-    private val pref by lazy {
-        try {
-            getSharedPreferences(SHARED_PREF_FILE_NAME, MODE_WORLD_READABLE)
-        } catch (_: Exception){
-            null
-        }
-    }
+    private val pref by lazy { FilePref }
 
     private fun showRebootSnack(){
         if (pref == null) return // don't display snackbar if module not active.
@@ -129,8 +116,6 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
         val advancedOptions = findViewById<TextView>(R.id.advanced_options)
         val telegramLink = findViewById<TextView>(R.id.telegram_group)
         val updateAvailableLink = findViewById<TextView>(R.id.update_available_link)
-        val confExport = findViewById<ImageButton>(R.id.conf_export)
-        val confImport = findViewById<ImageButton>(R.id.conf_import)
 
         /**
          * Set default spoof device to [DeviceProps.defaultDeviceName].
@@ -139,7 +124,7 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
          * Restart the activity.
          */
         resetSettings.setOnClickListener {
-            pref?.edit()?.run {
+            pref.run {
                 putString(PREF_DEVICE_TO_SPOOF, DeviceProps.defaultDeviceName)
                 putBoolean(PREF_OVERRIDE_ROM_FEATURE_LEVELS, true)
                 putBoolean(PREF_STRICTLY_CHECK_GOOGLE_PHOTOS, true)
@@ -150,7 +135,6 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
                 putBoolean(PREF_ENABLE_VERBOSE_LOGS, false)
                 putBoolean(PREF_SPOOF_ANDROID_VERSION_FOLLOW_DEVICE, false)
                 putString(PREF_SPOOF_ANDROID_VERSION_MANUAL, null)
-                apply()
             }
             restartActivity()
         }
@@ -161,9 +145,8 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
         overrideROMFeatureLevels.apply {
             isChecked = pref?.getBoolean(PREF_OVERRIDE_ROM_FEATURE_LEVELS, true) ?: false
             setOnCheckedChangeListener { _, isChecked ->
-                pref?.edit()?.run {
+                pref.run {
                     putBoolean(PREF_OVERRIDE_ROM_FEATURE_LEVELS, isChecked)
-                    apply()
                     showRebootSnack()
                 }
             }
@@ -175,9 +158,8 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
         switchEnforceGooglePhotos.apply {
             isChecked = pref?.getBoolean(PREF_STRICTLY_CHECK_GOOGLE_PHOTOS, true) ?: false
             setOnCheckedChangeListener { _, isChecked ->
-                pref?.edit()?.run {
+                pref.run {
                     putBoolean(PREF_STRICTLY_CHECK_GOOGLE_PHOTOS, isChecked)
-                    apply()
                     showRebootSnack()
                 }
             }
@@ -199,13 +181,12 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                     val deviceName = aa.getItem(position)
-                    pref?.edit()?.apply {
+                    pref.run {
                         putString(PREF_DEVICE_TO_SPOOF, deviceName)
                         putStringSet(
                             PREF_SPOOF_FEATURES_LIST,
                             DeviceProps.getFeaturesUpToFromDeviceName(deviceName)
                         )
-                        apply()
                     }
 
                     peekFeatureFlagsChanged(featureFlagsChanged)
@@ -255,47 +236,13 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
         }
 
         /**
-         * Open config share options.
-         * Also see [Utils.writeConfigFile].
-         */
-        confExport.setOnClickListener {
-            AlertDialog.Builder(this).apply {
-                setTitle(R.string.export_config)
-                setMessage(R.string.export_config_desc)
-                setPositiveButton(R.string.share){_, _ ->
-                    shareConfFile()
-                }
-                setNegativeButton(R.string.save){_, _ ->
-                    saveConfFile()
-                }
-                setNeutralButton(android.R.string.cancel, null)
-            }
-                .show()
-        }
-
-        confImport.setOnClickListener {
-            AlertDialog.Builder(this).apply {
-                setTitle(R.string.import_config)
-                setMessage(R.string.import_config_desc)
-                setPositiveButton(android.R.string.ok){_, _ ->
-                    importConfFile()
-                }
-                setNegativeButton(android.R.string.cancel, null)
-            }
-                .show()
-        }
-
-        /**
          * Check if changelogs need to be shown when upgrading from older version.
          */
-        pref?.apply {
+        pref.run {
             val thisVersion = BuildConfig.VERSION_CODE
             if (getInt(PREF_LAST_VERSION, 0) < thisVersion){
                 showChangeLog()
-                edit().apply {
-                    putInt(PREF_LAST_VERSION, thisVersion)
-                    apply()
-                }
+                putInt(PREF_LAST_VERSION, thisVersion)
             }
         }
 
@@ -396,7 +343,6 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
          */
         return when {
             getUpdateStatus(UPDATE_INFO_URL) -> RELEASES_URL
-            getUpdateStatus(UPDATE_INFO_URL2) -> RELEASES_URL2
             else -> null
         }
     }
@@ -409,105 +355,4 @@ class ActivityMain: AppCompatActivity(R.layout.activity_main) {
             data = Uri.parse(url)
         })
     }
-
-    /**
-     * Creates configuration export file to internal cache.
-     * Shares it to other apps.
-     */
-    private fun shareConfFile(){
-
-        try {
-            val confFile = File(cacheDir, CONF_EXPORT_NAME)
-            val uriFromFile = Uri.fromFile(confFile)
-
-            confFile.delete()
-            utils.writeConfigFile(this, uriFromFile, pref)
-
-            val confFileShareUri =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                    FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID, confFile)
-                else uriFromFile
-
-            Intent().run {
-
-                action = Intent.ACTION_SEND
-                type = "*/*"
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-
-                this.putExtra(Intent.EXTRA_STREAM, confFileShareUri)
-                startActivity(Intent.createChooser(this, getString(R.string.share_config_file)))
-            }
-        }
-        catch (e: Exception){
-            e.printStackTrace()
-            Toast.makeText(this, "${getString(R.string.share_error)}: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Open a storage location on the device to export the configuration as a document.
-     * Uses intent with action [Intent.ACTION_CREATE_DOCUMENT]
-     * Also see [configCreateLauncher].
-     *
-     * Derived from https://gist.github.com/neonankiti/05922cf0a44108a2e2732671ed9ef386
-     */
-    private fun saveConfFile(){
-        val openIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            // filter to only show openable items.
-            addCategory(Intent.CATEGORY_OPENABLE)
-
-            // Create a file with the requested Mime type
-            type = "*/*"
-            putExtra(Intent.EXTRA_TITLE, CONF_EXPORT_NAME)
-        }
-        Toast.makeText(this, R.string.select_a_location, Toast.LENGTH_SHORT).show()
-        configCreateLauncher.launch(openIntent)
-    }
-
-    /**
-     * Intent launcher to start system file picker UI to select location of export.
-     * The Uri of the location is present in result.
-     * Then call [Utils.writeConfigFile] using that Uri.
-     */
-    private val configCreateLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
-        try {
-            if (it.resultCode == Activity.RESULT_OK) {
-                utils.writeConfigFile(this, it.data!!.data!!, pref)
-                Toast.makeText(this, R.string.export_complete, Toast.LENGTH_SHORT).show()
-            }
-        }
-        catch (e: Exception){
-            e.printStackTrace()
-            Toast.makeText(this, "${getString(R.string.share_error)}: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Read a JSON file to get the configurations.
-     * Opens system file picker to select the file.
-     *
-     * https://developer.android.com/training/data-storage/shared/documents-files#open-file
-     */
-    private fun importConfFile(){
-        val openIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
-        }
-        configOpenLauncher.launch(openIntent)
-    }
-
-    private val configOpenLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
-        try {
-            if (it.resultCode == Activity.RESULT_OK) {
-                utils.readConfigFile(this, it.data!!.data!!, pref)
-                Toast.makeText(this, R.string.import_complete, Toast.LENGTH_SHORT).show()
-                restartActivity()
-            }
-        }
-        catch (e: Exception){
-            e.printStackTrace()
-            Toast.makeText(this, "${getString(R.string.read_error)}: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
 }

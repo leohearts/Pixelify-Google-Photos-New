@@ -9,13 +9,10 @@ import balti.xposed.pixelifygooglephotos.Constants.PREF_DEVICE_TO_SPOOF
 import balti.xposed.pixelifygooglephotos.Constants.PREF_ENABLE_VERBOSE_LOGS
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_ANDROID_VERSION_FOLLOW_DEVICE
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_ANDROID_VERSION_MANUAL
-import balti.xposed.pixelifygooglephotos.Constants.SHARED_PREF_FILE_NAME
 
 class AdvancedOptionsActivity: AppCompatActivity(R.layout.advanced_options_activity) {
 
-    private val pref by lazy {
-        getSharedPreferences(SHARED_PREF_FILE_NAME, MODE_WORLD_READABLE)
-    }
+    private val pref by lazy { FilePref }
 
     private val verboseLogging by lazy { findViewById<CheckBox>(R.id.verbose_logging) }
     private val deviceNameLabel by lazy { findViewById<TextView>(R.id.device_name_label) }
@@ -26,8 +23,6 @@ class AdvancedOptionsActivity: AppCompatActivity(R.layout.advanced_options_activ
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (pref == null) return
 
         verboseLogging.isChecked = pref.getBoolean(PREF_ENABLE_VERBOSE_LOGS, false)
 
@@ -91,7 +86,7 @@ class AdvancedOptionsActivity: AppCompatActivity(R.layout.advanced_options_activ
      * Function to save all options.
      */
     private fun savePreferences(){
-        pref?.edit()?.run {
+        pref.run {
 
             /** Option for verbose log. */
             putBoolean(PREF_ENABLE_VERBOSE_LOGS, verboseLogging.isChecked)
@@ -126,7 +121,6 @@ class AdvancedOptionsActivity: AppCompatActivity(R.layout.advanced_options_activ
 
             }
 
-            apply()
         }
         setResult(Activity.RESULT_OK)
         finish()
