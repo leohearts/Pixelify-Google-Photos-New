@@ -9,7 +9,6 @@ import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_ANDROID_VERSION_FO
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_ANDROID_VERSION_MANUAL
 import balti.xposed.pixelifygooglephotos.Constants.PREF_STRICTLY_CHECK_GOOGLE_PHOTOS
 import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.XSharedPreferences
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -33,9 +32,7 @@ class DeviceSpoofer: IXposedHookLoadPackage {
     /**
      * To read preference of user.
      */
-    private val pref by lazy {
-        XSharedPreferences(BuildConfig.APPLICATION_ID, Constants.SHARED_PREF_FILE_NAME)
-    }
+    private val pref by lazy { FilePref }
 
     private val verboseLog: Boolean by lazy {
         pref.getBoolean(PREF_ENABLE_VERBOSE_LOGS, false)

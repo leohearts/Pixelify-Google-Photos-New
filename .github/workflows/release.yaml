@@ -1,0 +1,76 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build with Gradle
+      env:
+        USER: ${{ env.USER }}
+        TOKEN: ${{ secrets.TOKEN }}
+      run: ./gradlew assembleRelease
+
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: ${{ github.workspace }}/app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.KEY64 }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY }}
+        keyPassword: ${{ secrets.KEY }}
+      env:
+        BUILD_TOOLS_VERSION: "33.0.1"
+
+    - name: Retrieve version
+      run: |
+        VERSION=$(echo ${{ github.event.head_commit.id }} | head -c 7)
+        VERSION=${VERSION:-latest}
+        echo "VERSION=$VERSION" >> $GITHUB_ENV 
+
+
+    - name: Rename
+      run: mv ${{ github.workspace }}/app/build/outputs/apk/release/app-release-unsigned-signed.apk ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION }}.apk
+
+    - name: Upload built apk
+      uses: actions/upload-artifact@v3
+      with:
+        name: Pixelify-Google-Photos-${{ env.VERSION }}
+        path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION }}.apk
+
+    - name: Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.VERSION }}
+        release_name: Pixelify Google Photos ${{ env.VERSION }}
+        draft: false
+        prerelease: false
+
+    - name: Upload
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION }}.apk 
+        asset_name: Pixelify-Google-Photos-${{ env.VERSION }}.apk 
+        asset_content_type: application/vnd.android.package-archive

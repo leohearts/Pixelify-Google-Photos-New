@@ -8,16 +8,13 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import balti.xposed.pixelifygooglephotos.Constants.PREF_SPOOF_FEATURES_LIST
-import balti.xposed.pixelifygooglephotos.Constants.SHARED_PREF_FILE_NAME
 
 /**
  * Provides granular controls for selecting some specific feature flags.
  */
 class FeatureCustomize: AppCompatActivity(R.layout.feature_customize) {
 
-    private val pref by lazy {
-        getSharedPreferences(SHARED_PREF_FILE_NAME, MODE_WORLD_READABLE)
-    }
+    private val pref by lazy { FilePref }
 
     /**
      * Set of feature names enabled by the user, fetched from shared prefs.
@@ -60,14 +57,12 @@ class FeatureCustomize: AppCompatActivity(R.layout.feature_customize) {
          * Then close the activity and send RESULT_OK
          */
         saveButton.setOnClickListener {
-
             val checkedFeatureNames =
                 checkboxHolder.children.filter { it is CheckBox && it.isChecked }
                     .map { (it as CheckBox).text.toString() }.toSet()
 
-            pref.edit().apply {
+            pref.run {
                 putStringSet(PREF_SPOOF_FEATURES_LIST, checkedFeatureNames)
-                apply()
             }
 
             setResult(Activity.RESULT_OK)
