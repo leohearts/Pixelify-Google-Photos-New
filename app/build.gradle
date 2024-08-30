@@ -38,3 +38,8 @@ dependencies {
     // Xposed API
     compileOnly 'de.robv.android.xposed:api:82'
 }
+tasks.register('printVersionInfo') {
+    doLast {
+        println "VERSION_NAME=${android.defaultConfig.versionName}"
+    }
+}

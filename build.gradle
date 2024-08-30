@@ -23,8 +23,3 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-task printVersionInfo {
-    doLast {
-        println "VERSION_NAME=${android.defaultConfig.versionName}"
-    }
-}
