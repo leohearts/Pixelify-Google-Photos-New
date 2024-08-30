@@ -25,7 +25,7 @@ jobs:
       env:
         USER: ${{ env.USER }}
         TOKEN: ${{ secrets.TOKEN }}
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleRelease printVersionInfo | tee version_info.txt
 
     - name: Sign APK
       uses: r0adkll/sign-android-release@v1
@@ -43,6 +43,9 @@ jobs:
         VERSION=$(echo ${{ github.event.head_commit.id }} | head -c 7)
         VERSION=${VERSION:-latest}
         echo "VERSION=$VERSION" >> $GITHUB_ENV 
+        APK_PATH=$(find . -name "*.apk" | head -n 1)
+        VERSION_NAME=$(aapt dump badging "$APK_PATH" | grep versionName | awk -F"'" '{print $4}')
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
 
 
     - name: Rename
@@ -51,8 +54,8 @@ jobs:
     - name: Upload built apk
       uses: actions/upload-artifact@v3
       with:
-        name: Pixelify-Google-Photos-${{ env.VERSION }}
-        path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION }}.apk
+        name: Pixelify-Google-Photos-${{ env.VERSION_NAME }}-${{ env.VERSION }}
+        path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION_NAME }}-${{ env.VERSION }}.apk
 
     - name: Release
       id: create_release
@@ -60,8 +63,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v${{ env.VERSION }}
-        release_name: Pixelify Google Photos ${{ env.VERSION }}
+        tag_name: Pixelify-GP-${{ env.VERSION_NAME }}-${{ env.VERSION }}
+        release_name: Pixelify Google Photos ${{ env.VERSION_NAME }}
         draft: false
         prerelease: false
 
@@ -71,6 +74,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION }}.apk 
-        asset_name: Pixelify-Google-Photos-${{ env.VERSION }}.apk 
+        asset_path: ${{ github.workspace }}/app/build/outputs/apk/release/Pixelify-Google-Photos-${{ env.VERSION_NAME }}-${{ env.VERSION }}.apk 
+        asset_name: Pixelify-Google-Photos-${{ env.VERSION_NAME }}-${{ env.VERSION }}.apk 
         asset_content_type: application/vnd.android.package-archive
