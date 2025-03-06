@@ -4,11 +4,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven {
-            url = uri("https://maven.pkg.github.com/miIiano/maven")
-            credentials {
-                username = System.getenv("USER")
-                password = System.getenv("TOKEN")
-            }
+            url = uri("https://api.xposed.info/")
         }
     }
 }
