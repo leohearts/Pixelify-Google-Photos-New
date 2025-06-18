@@ -19,8 +19,8 @@ Tested on EdXposed by [Jim Wu](https://github.com/MlgmXyysd)
 ### Steps to use:
 1. Install Magisk, [LSPosed](https://github.com/LSPosed/LSPosed) Or [EdXposed](https://github.com/ElderDrivers/EdXposed).  
 2. Install the apk of this app (available from [Releases](https://github.com/BaltiApps/Pixelify-Google-Photos/releases) page.)  
-3. Open LSPosed / EdXposed app and enable the module. For LSPosed, Google Photos will be automatically selected.  
-4. Reboot. Enjoy. (If needed, you might need to clear data of Google Photos app).  
+3. Open LSPosed / EdXposed app and enable the module. For LSPosed, Google Photos will be automatically selected. You may want to disable "Make sure to spoof only in Google Photos" for LSPosed.
+4. Reboot or force-stop Google Photos. Enjoy. (If needed, you might need to clear data of Google Photos app).  
 
 ### How does this module work?
 It simply hooks on to `hasSystemFeature()` method under `android.app.ApplicationPackageManager` class. 
